@@ -43,7 +43,7 @@ def delete_missing_data(observables):
     # invert_mask
     kill_mask = ~keep_data
     for key,item in observables.items():
-        values = item.values
+        values = item.values.copy()
         values[kill_mask] = np.nan
         item.iloc[:,:] = values
 
@@ -64,6 +64,8 @@ def make_predictions_dt(predictors,to_predict,bw,dt,observables):
     """Just a giant sequence of loops to transform the data into panel format (from vaguely longitudinal).
     Not very elegant, but it does the job.
     """
+    # ectools NWKR expects ndarray bandwidth to handle single-element lists correctly
+    bw = np.array(bw)
     iterator = dt_predictor_iterator(
                          trajectories=[observables[x].values for x in predictors],
                          y=observables[to_predict].values,

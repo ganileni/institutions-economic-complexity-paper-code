@@ -24,10 +24,15 @@ institutions-economic-complexity-paper-code/
 ├── src/
 │   ├── predictions.py         # Prediction utilities
 │   ├── plotting.py            # Plotting utilities
+│   ├── imputation.py          # TechFit imputation strategies
 │   ├── run_predictions.py     # Prediction generation script
 │   ├── generate_plots.py      # Plot generation script
-│   └── generate_stats.py      # Statistical analysis script
+│   ├── generate_stats.py      # Statistical analysis script
+│   └── generate_comparison.py # Sensitivity comparison artefacts
+├── tests/
+│   └── test_imputation.py     # Imputation strategy tests
 ├── run_all.py                 # Main entry point
+├── run_sensitivity.py         # Sensitivity analysis orchestrator
 ├── Pipfile                    # Pipenv dependencies
 ├── requirements.txt           # Pip dependencies (alternative)
 └── README.md                  # This file
@@ -119,6 +124,39 @@ cd src
 python run_predictions.py
 python generate_plots.py
 python generate_stats.py
+```
+
+## Sensitivity Analysis: TechFit Missingness
+
+The paper's baseline approach fills missing Technological Fitness values with the global minimum observed value. Since this missingness is deterministic (countries lack patent data before a development threshold), a reviewer requested sensitivity analysis to alternative treatments.
+
+The sensitivity pipeline tests three imputation strategies:
+
+- **baseline**: fill all NaN TechFit with the global minimum (original paper approach)
+- **drop**: remove country-year pairs where TechFit is NaN
+- **country_min**: backfill each country's leading NaN with its earliest observed TechFit value
+
+To run the full sensitivity analysis:
+
+```bash
+pipenv run python run_sensitivity.py --skip-bootstrap   # fast (~10 min)
+pipenv run python run_sensitivity.py                     # full with bootstrap (~2 hrs)
+```
+
+This reruns the entire pipeline (predictions, plots, stats) for each strategy, then generates comparison artefacts in `output/sensitivity_comparison/`:
+
+| File | Description |
+|---|---|
+| `stability_map.pdf` | Baseline best-model map with hatching where rankings change under drop |
+| `whichbest_comparison.pdf` | Side-by-side best-model maps for all three strategies |
+| `mae_summary.csv` / `.tex` | Per-model MAE across strategies |
+| `data_summary.csv` | Observation counts per strategy |
+| `recompute_plots_with_other_strategies/` | Full plot sets regenerated under each strategy |
+
+The individual scripts also accept imputation and output routing arguments:
+
+```bash
+pipenv run python run_all.py --imputation drop --output-dir output/custom_run
 ```
 
 ## Data Sources

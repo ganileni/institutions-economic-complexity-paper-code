@@ -61,25 +61,39 @@ def main():
         help='Only run statistical analysis (requires predictions to exist)'
     )
     parser.add_argument(
-        '--skip-bootstrap', 
+        '--skip-bootstrap',
         action='store_true',
         help='Skip bootstrap analysis in stats (much faster)'
     )
-    
+    parser.add_argument(
+        '--imputation',
+        choices=['baseline', 'drop', 'country_min'],
+        default='baseline',
+        help='TechFit NaN handling strategy (default: baseline)'
+    )
+    parser.add_argument(
+        '--output-dir',
+        type=Path,
+        default=None,
+        help='Base output directory (predictions/ and plots/ created inside)'
+    )
+
     args = parser.parse_args()
-    
+
     # If no specific args, run everything
     run_all = not (args.predictions or args.plots or args.stats)
-    
+
     # Get paths
     script_dir = Path(__file__).parent
     src_dir = script_dir / 'src'
-    output_dir = script_dir / 'output'
-    
+    output_dir = args.output_dir or (script_dir / 'output')
+
     # Create output directories
-    (output_dir / 'predictions').mkdir(parents=True, exist_ok=True)
-    (output_dir / 'plots').mkdir(parents=True, exist_ok=True)
-    (output_dir / 'plots' / 'si').mkdir(parents=True, exist_ok=True)
+    pred_output_dir = output_dir / 'predictions'
+    plot_output_dir = output_dir / 'plots'
+    pred_output_dir.mkdir(parents=True, exist_ok=True)
+    plot_output_dir.mkdir(parents=True, exist_ok=True)
+    (plot_output_dir / 'si').mkdir(parents=True, exist_ok=True)
     
     print("Polity Paper Analysis Pipeline")
     print("="*60)
@@ -91,38 +105,49 @@ def main():
     # Step 1: Run predictions
     if run_all or args.predictions:
         predictions_script = src_dir / 'run_predictions.py'
-        if not run_script(predictions_script, "Model Predictions"):
+        pred_args = [
+            '--imputation', args.imputation,
+            '--output-dir', str(pred_output_dir),
+        ]
+        if not run_script(predictions_script, "Model Predictions", pred_args):
             success = False
             if not (args.plots or args.stats):
                 print("\nStopping due to prediction failure.")
                 return 1
-    
+
     # Check if predictions exist
-    predictions_file = output_dir / 'predictions' / 'polity-short-4d-backfill.csv'
-    
+    predictions_file = pred_output_dir / 'polity-short-4d-backfill.csv'
+
     # Step 2: Generate plots
     if run_all or args.plots:
         if not predictions_file.exists():
             print(f"\nError: Predictions file not found at {predictions_file}")
             print("Please run with --predictions first or without any flags.")
             return 1
-        
+
         plots_script = src_dir / 'generate_plots.py'
-        if not run_script(plots_script, "Plot Generation"):
+        plot_args = [
+            '--predictions-dir', str(pred_output_dir),
+            '--output-dir', str(plot_output_dir),
+        ]
+        if not run_script(plots_script, "Plot Generation", plot_args):
             success = False
-    
+
     # Step 3: Run statistical analysis
     if run_all or args.stats:
         if not predictions_file.exists():
             print(f"\nError: Predictions file not found at {predictions_file}")
             print("Please run with --predictions first or without any flags.")
             return 1
-        
+
         stats_script = src_dir / 'generate_stats.py'
-        extra_args = []
+        stats_args = [
+            '--predictions-dir', str(pred_output_dir),
+            '--output-dir', str(plot_output_dir),
+        ]
         if args.skip_bootstrap:
-            extra_args.append('--skip-bootstrap')
-        if not run_script(stats_script, "Statistical Analysis", extra_args):
+            stats_args.append('--skip-bootstrap')
+        if not run_script(stats_script, "Statistical Analysis", stats_args):
             success = False
     
     # Summary
@@ -130,9 +155,9 @@ def main():
     if success:
         print("All analyses completed successfully!")
         print(f"\nOutputs saved to:")
-        print(f"  Predictions: {output_dir / 'predictions'}")
-        print(f"  Plots: {output_dir / 'plots'}")
-        print(f"  SI Figures: {output_dir / 'plots' / 'si'}")
+        print(f"  Predictions: {pred_output_dir}")
+        print(f"  Plots: {plot_output_dir}")
+        print(f"  SI Figures: {plot_output_dir / 'si'}")
     else:
         print("Some analyses failed. Please check the output above.")
         return 1

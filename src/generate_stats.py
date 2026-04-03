@@ -1458,11 +1458,15 @@ def main():
                         help='Number of parallel jobs (default: 4)')
     parser.add_argument('--skip-bootstrap', action='store_true',
                         help='Skip bootstrap figures (faster)')
+    parser.add_argument('--predictions-dir', type=Path, default=None,
+                        help='Directory containing predictions CSV')
+    parser.add_argument('--output-dir', type=Path, default=None,
+                        help='Output directory for stats plots')
     args = parser.parse_args()
-    
+
     script_dir = Path(__file__).parent
-    predictions_dir = script_dir / '../output/predictions'
-    output_dir = script_dir / '../output/plots'
+    predictions_dir = args.predictions_dir or (script_dir / '../output/predictions')
+    output_dir = args.output_dir or (script_dir / '../output/plots')
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / 'si').mkdir(parents=True, exist_ok=True)
     

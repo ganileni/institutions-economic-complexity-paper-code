@@ -631,11 +631,19 @@ def plot_whichbest_generic(data, observables, output_dir, nperiods, DT,
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='Generate plots')
+    parser.add_argument('--predictions-dir', type=Path, default=None,
+                        help='Directory containing predictions CSV')
+    parser.add_argument('--output-dir', type=Path, default=None,
+                        help='Output directory for plots')
+    cli_args = parser.parse_args()
+
     # Paths relative to this script location
     script_dir = Path(__file__).parent
     data_dir = script_dir / '../data'
-    predictions_dir = script_dir / '../output/predictions'
-    output_dir = script_dir / '../output/plots'
+    predictions_dir = cli_args.predictions_dir or (script_dir / '../output/predictions')
+    output_dir = cli_args.output_dir or (script_dir / '../output/plots')
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / 'si').mkdir(parents=True, exist_ok=True)
     

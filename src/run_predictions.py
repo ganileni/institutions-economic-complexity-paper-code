@@ -6,6 +6,7 @@ This script generates predictions for GDP growth using various combinations
 of predictors: Fitness, GDP, Polity, and Technological Fitness.
 """
 
+import argparse
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -20,13 +21,21 @@ from predictions import (
     make_predictions_at_all_dts_on_predictors,
     add_observable_values_to_df,
 )
+from imputation import apply_imputation
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Generate predictions')
+    parser.add_argument('--imputation', choices=['baseline', 'drop', 'country_min'],
+                        default='baseline', help='TechFit NaN handling strategy')
+    parser.add_argument('--output-dir', type=Path, default=None,
+                        help='Output directory for predictions CSV')
+    args = parser.parse_args()
+
     # Paths relative to this script location
     script_dir = Path(__file__).parent
     data_dir = script_dir / '../data'
-    output_dir = script_dir / '../output/predictions'
+    output_dir = args.output_dir or (script_dir / '../output/predictions')
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Define which data files to load
@@ -74,10 +83,9 @@ def main():
     print("\nData shapes after adding tech_fitness:")
     print([(key, item.shape) for key, item in observables.items()])
 
-    # Set all missing tech fitness values to minimum in the dataset
-    minimum_tf = np.nanmin(observables['tech_fitness'].values)
-    fill_value = minimum_tf
-    observables['tech_fitness'] = observables['tech_fitness'].copy().fillna(fill_value)
+    # Apply TechFit imputation strategy
+    print(f"\nImputation strategy: {args.imputation}")
+    apply_imputation(observables, args.imputation)
 
     # Now delete still missing data
     kill_report = delete_missing_data(observables)
