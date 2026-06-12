@@ -166,7 +166,9 @@ pipenv run python run_all.py --imputation drop --output-dir output/custom_run
 - **Polity**: Polity V dataset measuring regime characteristics
 - **Technological Fitness**: Derived from PATSTAT patent data
 
-Please check the paper for the cited sources.
+The four CSV files under `data/` are the **processed metric series** used in the analysis. Variable definitions, coding schemes, and the transformations applied to derive each metric (data cleaning, Fitness computation, Polity definition) are documented in the Supporting Information of the paper.
+
+The raw UN Comtrade trade flows (<https://comtradeplus.un.org>) and EPO PATSTAT patent records (<https://www.epo.org/en/searching-for-patents/business/patstat>) underlying the Fitness and Technological Fitness metrics are not redistributed here, because their providers' licensing terms do not permit it; they can be obtained directly from those providers. The Polity V and World Bank WDI series are included under `data/` and are also publicly available from their original providers.
 
 
 ## Output
